@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Blocks Educational Applet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: min(95vw, 95vh * 16/9);
+            height: min(95vh, 95vw * 9/16);
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            color: white;
+            padding: clamp(0.5rem, 2vh, 1.5rem);
+            text-align: center;
+            font-size: clamp(1rem, 3vh, 2.5rem);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .progress-bar {
+            display: flex;
+            justify-content: center;
+            gap: clamp(0.3rem, 1vh, 0.8rem);
+            padding: clamp(0.5rem, 1.5vh, 1.2rem);
+            background: #f5f5f5;
+            flex-shrink: 0;
+        }
+
+        .starting-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            gap: clamp(2rem, 5vh, 4rem);
+        }
+
+        .starting-title {
+            font-size: clamp(2rem, 8vh, 6rem);
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            margin: 0;
+        }
+
+        .start-button {
+            padding: clamp(1rem, 3vh, 2rem) clamp(2rem, 6vh, 4rem);
+            font-size: clamp(1.2rem, 3vh, 2rem);
+            font-weight: bold;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .start-button:hover {
+            background: #45a049;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .instruction-overlay {
+            position: fixed;
+            bottom: clamp(80px, 12vh, 120px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: #FFD93D;
+            color: #333;
+            padding: clamp(0.8rem, 2vh, 1.5rem) clamp(1.5rem, 4vh, 3rem);
+            border-radius: 12px;
+            font-size: clamp(0.9rem, 2.2vh, 1.4rem);
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 3px solid #FFC107;
+            animation: gentle-pulse 2s infinite;
+        }
+
+        @keyframes gentle-pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+        .progress-dot {
+            width: clamp(8px, 1.5vh, 16px);
+            height: clamp(8px, 1.5vh, 16px);
+            border-radius: 50%;
+            background: #ddd;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .progress-dot.active {
+            background: #4CAF50;
+            transform: scale(1.2);
+        }
+
+        .progress-dot.completed {
+            background: #2196F3;
+        }
+
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease;
+            padding: clamp(0.5rem, 2vh, 2rem);
+            box-sizing: border-box;
+        }
+
+        .page.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .page.prev {
+            transform: translateX(-100%);
+        }
+
+        .unit-block {
+            width: clamp(30px, 6vh, 70px);
+            height: clamp(30px, 6vh, 70px);
+            background: #FF6B6B;
+            border: 3px solid #333;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(0.8rem, 2.5vh, 2rem);
+            font-weight: bold;
+            color: white;
+            margin: clamp(3px, 1vh, 12px);
+            user-select: none;
+        }
+
+        .unit-block:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .unit-block.highlighted {
+            background: #FFD93D;
+            animation: pulse 1s infinite;
+        }
+
+        .unit-block.clicked {
+            background: #4CAF50;
+            transform: scale(0.9);
+        }
+
+        .rod {
+            display: flex;
+            gap: 2px;
+            margin: 10px;
+            transition: all 0.5s ease;
+        }
+
+        .rod .unit-block {
+            margin: 0;
+        }
+
+        .equation {
+            font-size: clamp(1.5rem, 5vh, 4rem);
+            font-weight: bold;
+            color: #333;
+            margin: clamp(0.5rem, 2vh, 2rem) 0;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .equation.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(0.8rem, 2vh, 2rem);
+            margin: clamp(0.5rem, 1vh, 1.5rem) 0;
+            width: 100%;
+            max-height: 100%;
+            overflow-y: auto;
+        }
+
+        .slider {
+            width: min(400px, 80vw);
+            height: clamp(8px, 1.5vh, 15px);
+            border-radius: 6px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            position: relative;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: clamp(20px, 3vh, 35px);
+            height: clamp(20px, 3vh, 35px);
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .slider::-moz-range-thumb {
+            width: clamp(20px, 3vh, 35px);
+            height: clamp(20px, 3vh, 35px);
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            width: min(400px, 80vw);
+            font-size: clamp(0.7rem, 1.5vh, 1rem);
+            color: #666;
+        }
+
+        .button {
+            padding: clamp(0.5rem, 1.5vh, 1.2rem) clamp(1rem, 3vh, 2.5rem);
+            font-size: clamp(0.8rem, 2vh, 1.4rem);
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: clamp(0.2rem, 0.5vh, 0.8rem);
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .button.primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .button.primary:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .button:disabled {
+            background: #ccc !important;
+            color: #999 !important;
+            cursor: not-allowed !important;
+            opacity: 0.6;
+            transform: none !important;
+        }
+
+        .button.glow {
+            animation: glow 2s infinite;
+            box-shadow: 0 0 20px #4CAF50;
+        }
+
+        .button.inactive {
+            background: #e0e0e0 !important;
+            color: #999 !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: clamp(0.5rem, 1.5vh, 1.2rem) clamp(1rem, 3vh, 2rem);
+            background: #f5f5f5;
+            flex-shrink: 0;
+        }
+
+        .page-counter {
+            font-weight: bold;
+            color: #666;
+            font-size: clamp(0.8rem, 1.8vh, 1.2rem);
+        }
+
+        .narration-bubble {
+            background: white;
+            border: 3px solid #4CAF50;
+            border-radius: 20px;
+            padding: clamp(0.8rem, 2vh, 2rem) clamp(1rem, 3vh, 2.5rem);
+            margin: clamp(0.5rem, 1vh, 1.5rem);
+            font-size: clamp(0.9rem, 2.2vh, 1.6rem);
+            text-align: center;
+            position: relative;
+            max-width: min(80%, 600px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .narration-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: clamp(-10px, -2vh, -18px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: clamp(8px, 2vh, 18px) solid transparent;
+            border-right: clamp(8px, 2vh, 18px) solid transparent;
+            border-top: clamp(8px, 2vh, 18px) solid #4CAF50;
+        }
+
+        .blocks-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: clamp(0.5rem, 1.5vh, 1.2rem);
+            margin: clamp(0.5rem, 1vh, 1.5rem) 0;
+            min-height: clamp(60px, 12vh, 150px);
+            max-height: 40vh;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .celebration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #FFD93D;
+            animation: confetti-fall 3s linear infinite;
+        }
+
+        .sequence-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: clamp(0.3rem, 1vh, 1.2rem);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .sequence-item.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .sequence-label {
+            font-size: clamp(1rem, 2.5vh, 1.8rem);
+            font-weight: bold;
+            color: #333;
+            margin-top: clamp(0.2rem, 0.8vh, 0.8rem);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes glow {
+            0%, 100% { 
+                box-shadow: 0 0 5px #4CAF50;
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 25px #4CAF50, 0 0 35px #4CAF50;
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            .slider-container {
+                gap: clamp(0.5rem, 1.5vh, 1.5rem);
+                padding: 0 clamp(0.5rem, 2vw, 1rem);
+            }
+        }
+
+        @media (max-height: 600px) {
+            .narration-bubble {
+                padding: clamp(0.5rem, 1.5vh, 1rem) clamp(0.8rem, 2vh, 1.5rem);
+                font-size: clamp(0.8rem, 2vh, 1.2rem);
+                margin: clamp(0.3rem, 0.8vh, 0.8rem);
+            }
+            
+            .equation {
+                font-size: clamp(1.2rem, 4vh, 2.5rem);
+                margin: clamp(0.3rem, 1vh, 1rem) 0;
+            }
+            
+            .blocks-container {
+                min-height: clamp(40px, 8vh, 80px);
+                max-height: 25vh;
+            }
+        }
+
+        @media (orientation: portrait) {
+            .app-container {
+                width: min(95vw, 95vh * 9/16);
+                height: min(95vh, 95vw * 16/9);
+            }
+            
+            .blocks-container {
+                max-height: 30vh;
+            }
+        }
+
+        /* Ensure content fits in very small screens */
+        @media (max-height: 400px) {
+            .header {
+                padding: 0.3rem;
+                font-size: clamp(0.8rem, 2.5vh, 1.2rem);
+            }
+            
+            .progress-bar {
+                padding: 0.3rem;
+            }
+            
+            .navigation {
+                padding: 0.3rem 1rem;
+            }
+            
+            .page {
+                padding: 0.3rem;
+            }
+            
+            .narration-bubble {
+                padding: 0.5rem 1rem;
+                font-size: clamp(0.7rem, 1.8vh, 1rem);
+                margin: 0.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1 id="header-title">Number Blocks - Learning Multiplication</h1>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-dot active" data-page="1"></div>
+            <div class="progress-dot" data-page="2"></div>
+            <div class="progress-dot" data-page="3"></div>
+            <div class="progress-dot" data-page="4"></div>
+            <div class="progress-dot" data-page="5"></div>
+            <div class="progress-dot" data-page="6"></div>
+            <div class="progress-dot" data-page="7"></div>
+            <div class="progress-dot" data-page="8"></div>
+        </div>
+
+        <div class="content-area">
+            <!-- Starting Page -->
+            <div class="page active" id="page-start">
+                <div class="starting-page">
+                    <h1 class="starting-title">Number Blocks</h1>
+                    <button class="start-button" id="start-learning-btn">Start Learning</button>
+                </div>
+            </div>
+
+            <!-- Page 1: Unit Blocks Introduction -->
+            <div class="page" id="page-1">
+                <div class="narration-bubble">
+                    <span id="narration-1">Click on the unit blocks to see them come together!</span>
+                </div>
+                <div class="blocks-container">
+                    <div class="unit-block" id="block-1-1">1</div>
+                    <div class="unit-block" id="block-1-2">1</div>
+                </div>
+            </div>
+
+            <!-- Page 2: First Rod Formation -->
+            <div class="page" id="page-2">
+                <div class="narration-bubble">
+                    <span id="narration-2">Great! Now we have a 2-unit rod!</span>
+                </div>
+                <div class="blocks-container">
+                    <div class="rod" id="rod-2">
+                        <div class="unit-block">1</div>
+                        <div class="unit-block">1</div>
+                    </div>
+                </div>
+                <div class="equation" id="equation-2">2 × 1 = 2</div>
+            </div>
+
+            <!-- Page 3: Two 2-Unit Rods -->
+            <div class="page" id="page-3">
+                <div class="narration-bubble">
+                    <span id="narration-3">Now click on both 2-unit rods to combine them!</span>
+                </div>
+                <div class="blocks-container">
+                    <div class="rod" id="rod-3-1">
+                        <div class="unit-block">1</div>
+                        <div class="unit-block">1</div>
+                    </div>
+                    <div class="rod" id="rod-3-2">
+                        <div class="unit-block">1</div>
+                        <div class="unit-block">1</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 4: Combined 4-Unit Rod -->
+            <div class="page" id="page-4">
+                <div class="narration-bubble">
+                    <span id="narration-4">Excellent! Two 2-unit rods make a 4-unit rod!</span>
+                </div>
+                <div class="blocks-container">
+                    <div class="rod" id="rod-4">
+                        <div class="unit-block">1</div>
+                        <div class="unit-block">1</div>
+                        <div class="unit-block">1</div>
+                        <div class="unit-block">1</div>
+                    </div>
+                </div>
+                <div class="equation" id="equation-4">2 × 2 = 4</div>
+            </div>
+
+            <!-- Page 5: Interactive Slider -->
+            <div class="page" id="page-5">
+                <div class="narration-bubble">
+                    <span id="narration-5">Use the slider to explore multiplication by 2!</span>
+                </div>
+                <div class="slider-container">
+                    <div class="equation" id="equation-5">2 × 0 = 0</div>
+                    <input type="range" min="0" max="10" value="0" class="slider" id="multiplication-slider">
+                    <div class="slider-labels">
+                        <span>0</span>
+                        <span>5</span>
+                        <span>10</span>
+                    </div>
+                    <div class="blocks-container" id="slider-blocks"></div>
+                </div>
+            </div>
+
+            <!-- Page 6: Even Number Sequence -->
+            <div class="page" id="page-6">
+                <div class="narration-bubble">
+                    <span id="narration-6">Look at the pattern of even numbers!</span>
+                </div>
+                <div class="blocks-container" id="even-sequence">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Page 7: Multiples of 2 with Labels -->
+            <div class="page" id="page-7">
+                <div class="narration-bubble">
+                    <span id="narration-7">Here are all the multiples of 2 we've learned!</span>
+                </div>
+                <div class="blocks-container" id="multiples-display">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Page 8: Celebration -->
+            <div class="page" id="page-8">
+                <div class="narration-bubble">
+                    <span id="narration-8">Congratulations! You've mastered multiplication by 2!</span>
+                </div>
+                <div class="blocks-container">
+                    <div class="rod">
+                        <div class="unit-block">2</div>
+                        <div class="unit-block">×</div>
+                        <div class="unit-block">10</div>
+                        <div class="unit-block">=</div>
+                        <div class="unit-block">20</div>
+                    </div>
+                </div>
+                <button class="button primary" id="restart-btn">Start Over</button>
+                <div class="celebration" id="celebration"></div>
+            </div>
+        </div>
+
+        <!-- Instruction Overlay for Page 5 -->
+        <div class="instruction-overlay hidden" id="instruction-overlay">
+            Move slider to right-most position
+        </div>
+
+        <div class="navigation">
+            <button class="button" id="prev-btn" disabled>Previous</button>
+            <div class="page-counter">
+                <span>Page <span id="current-page">0</span> of 8</span>
+            </div>
+            <button class="button primary" id="next-btn" disabled>Next</button>
+        </div>
+    </div>
+
+    <script>
+        // Text content for internationalization
+        const textContent = {
+            en: {
+                headerTitle: "Number Blocks - Learning Multiplication",
+                narration1: "Click on the unit blocks to see them come together!",
+                narration2: "Great! Now we have a 2-unit rod!",
+                narration3: "Now click on both 2-unit rods to combine them!",
+                narration4: "Excellent! Two 2-unit rods make a 4-unit rod!",
+                narration5: "Use the slider to explore multiplication by 2!",
+                narration6: "Look at the pattern of even numbers!",
+                narration7: "Here are all the multiples of 2 we've learned!",
+                narration8: "Congratulations! You've mastered multiplication by 2!",
+                sliderInstruction: "Move slider to right-most position",
+                next: "Next",
+                previous: "Previous",
+                startOver: "Start Over"
+            },
+            bahasa: {
+                headerTitle: "Blok Angka - Belajar Perkalian",
+                narration1: "Klik pada blok unit untuk melihat mereka bergabung!",
+                narration2: "Bagus! Sekarang kita punya batang 2-unit!",
+                narration3: "Sekarang klik kedua batang 2-unit untuk menggabungkannya!",
+                narration4: "Luar biasa! Dua batang 2-unit membuat batang 4-unit!",
+                narration5: "Gunakan slider untuk menjelajahi perkalian dengan 2!",
+                narration6: "Lihat pola bilangan genap!",
+                narration7: "Ini semua kelipatan 2 yang telah kita pelajari!",
+                narration8: "Selamat! Anda telah menguasai perkalian dengan 2!",
+                sliderInstruction: "Gerakkan slider ke posisi paling kanan",
+                next: "Selanjutnya",
+                previous: "Sebelumnya",
+                startOver: "Mulai Lagi"
+            },
+            tagalog: {
+                headerTitle: "Number Blocks - Pag-aaral ng Multiplication",
+                narration1: "I-click ang mga unit blocks para makita silang magsama!",
+                narration2: "Magaling! Ngayon may 2-unit rod na tayo!",
+                narration3: "Ngayon i-click ang dalawang 2-unit rods para pagsamahin sila!",
+                narration4: "Napakagaling! Dalawang 2-unit rods ay gumagawa ng 4-unit rod!",
+                narration5: "Gamitin ang slider para tuklasin ang multiplication ng 2!",
+                narration6: "Tingnan ang pattern ng mga even numbers!",
+                narration7: "Ito ang lahat ng multiples ng 2 na natutunan natin!",
+                narration8: "Congratulations! Na-master mo na ang multiplication ng 2!",
+                sliderInstruction: "Ilipat ang slider sa pinakadulang posisyon",
+                next: "Susunod",
+                previous: "Nakaraan",
+                startOver: "Simulan Muli"
+            }
+        };
+
+        // Game state
+        let currentPage = 0; // Start with starting page
+        let currentLang = 'en';
+        let page1ClickCount = 0;
+        let page3ClickCount = 0;
+        let audioContext;
+        let completedPages = [0]; // Starting page is always completed
+
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.log('Audio not supported');
+                }
+            }
+        }
+
+        // Play sound effect
+        function playSound(frequency, duration, type = 'sine') {
+            if (!audioContext) return;
+            
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                console.log('Sound playback failed');
+            }
+        }
+
+        // Update progress bar
+        function updateProgressBar() {
+            const dots = document.querySelectorAll('.progress-dot');
+            dots.forEach((dot, index) => {
+                const pageNum = index + 1; // Progress dots represent pages 1-8
+                dot.classList.remove('active', 'completed');
+                
+                if (pageNum === currentPage && currentPage > 0) {
+                    dot.classList.add('active');
+                } else if (completedPages.includes(pageNum)) {
+                    dot.classList.add('completed');
+                }
+            });
+        }
+
+        // Show page
+        function showPage(pageNum) {
+            if (pageNum < 0 || pageNum > 8) return;
+            
+            const pages = document.querySelectorAll('.page');
+            pages.forEach((page, index) => {
+                page.classList.remove('active', 'prev');
+                const pageIndex = pageNum === 0 ? 0 : pageNum; // Starting page is index 0, others are 1-8
+                if ((pageNum === 0 && index === 0) || (pageNum > 0 && index === pageNum)) {
+                    page.classList.add('active');
+                } else if ((pageNum === 0 && index < 0) || (pageNum > 0 && index < pageNum)) {
+                    page.classList.add('prev');
+                }
+            });
+            
+            currentPage = pageNum;
+            if (!completedPages.includes(pageNum)) {
+                completedPages.push(pageNum);
+            }
+            
+            // Hide instruction overlay when not on page 5
+            const instructionOverlay = document.getElementById('instruction-overlay');
+            if (pageNum !== 5) {
+                instructionOverlay.classList.add('hidden');
+            }
+            
+            updateProgressBar();
+            updateNavigation();
+            updatePageCounter();
+            
+            // Initialize page-specific functionality
+            setTimeout(() => initializePage(pageNum), 100);
+        }
+
+        // Update navigation buttons
+        function updateNavigation() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            prevBtn.disabled = currentPage <= 0;
+            
+            // Next button logic varies by page
+            switch(currentPage) {
+                case 0: // Starting page
+                    nextBtn.disabled = true; // Use start button instead
+                    break;
+                case 1:
+                    nextBtn.disabled = page1ClickCount < 2;
+                    break;
+                case 2:
+                    nextBtn.disabled = false;
+                    break;
+                case 3:
+                    nextBtn.disabled = page3ClickCount < 2;
+                    break;
+                case 4:
+                    nextBtn.disabled = false;
+                    break;
+                case 5:
+                    nextBtn.disabled = true; // Controlled by slider
+                    break;
+                case 6:
+                case 7:
+                    nextBtn.disabled = false;
+                    break;
+                case 8:
+                    nextBtn.style.display = 'none';
+                    break;
+                default:
+                    nextBtn.disabled = false;
+            }
+        }
+
+        // Update page counter
+        function updatePageCounter() {
+            document.getElementById('current-page').textContent = currentPage === 0 ? 'Start' : currentPage;
+        }
+
+        // Initialize page-specific functionality
+        function initializePage(pageNum) {
+            switch(pageNum) {
+                case 0:
+                    initStartingPage();
+                    break;
+                case 1:
+                    initPage1();
+                    break;
+                case 2:
+                    initPage2();
+                    break;
+                case 3:
+                    initPage3();
+                    break;
+                case 4:
+                    initPage4();
+                    break;
+                case 5:
+                    initPage5();
+                    break;
+                case 6:
+                    initPage6();
+                    break;
+                case 7:
+                    initPage7();
+                    break;
+                case 8:
+                    initPage8();
+                    break;
+            }
+        }
+
+        // Starting page initialization
+        function initStartingPage() {
+            const startBtn = document.getElementById('start-learning-btn');
+            startBtn.onclick = () => {
+                showPage(1);
+                playSound(523, 0.3);
+            };
+        }
+
+        // Page 1: Unit blocks interaction
+        function initPage1() {
+            page1ClickCount = 0;
+            const block1 = document.getElementById('block-1-1');
+            const block2 = document.getElementById('block-1-2');
+            
+            // Reset blocks
+            block1.classList.remove('highlighted', 'clicked');
+            block2.classList.remove('highlighted', 'clicked');
+            block1.style.transform = '';
+            block2.style.transform = '';
+            
+            block1.onclick = () => {
+                if (page1ClickCount === 0) {
+                    block1.classList.add('highlighted');
+                    page1ClickCount++;
+                    playSound(440, 0.2);
+                    updateNavigation();
+                }
+            };
+            
+            block2.onclick = () => {
+                if (page1ClickCount === 1) {
+                    block2.classList.add('highlighted');
+                    page1ClickCount++;
+                    playSound(554, 0.2);
+                    
+                    // Animate blocks coming together
+                    setTimeout(() => {
+                        block2.style.transform = 'translateX(-80px)';
+                        setTimeout(() => {
+                            showPage(2);
+                        }, 800);
+                    }, 500);
+                }
+            };
+            
+            updateNavigation();
+        }
+
+        // Page 2: Show 2-unit rod
+        function initPage2() {
+            setTimeout(() => {
+                const equation = document.getElementById('equation-2');
+                equation.classList.add('show');
+                playSound(659, 0.3);
+                updateNavigation();
+            }, 500);
+        }
+
+        // Page 3: Two 2-unit rods interaction
+        function initPage3() {
+            page3ClickCount = 0;
+            const rod1 = document.getElementById('rod-3-1');
+            const rod2 = document.getElementById('rod-3-2');
+            
+            // Reset rods
+            rod1.style.background = '';
+            rod2.style.background = '';
+            rod1.style.transform = '';
+            rod2.style.transform = '';
+            
+            rod1.onclick = () => {
+                if (page3ClickCount === 0) {
+                    rod1.style.background = '#FFD93D';
+                    page3ClickCount++;
+                    playSound(440, 0.2);
+                    updateNavigation();
+                }
+            };
+            
+            rod2.onclick = () => {
+                if (page3ClickCount === 1) {
+                    rod2.style.background = '#FFD93D';
+                    page3ClickCount++;
+                    playSound(554, 0.2);
+                    
+                    // Animate rods coming together
+                    setTimeout(() => {
+                        rod2.style.transform = 'translateX(-140px)';
+                        setTimeout(() => {
+                            showPage(4);
+                        }, 800);
+                    }, 500);
+                }
+            };
+            
+            updateNavigation();
+        }
+
+        // Page 4: Show 4-unit rod
+        function initPage4() {
+            setTimeout(() => {
+                const equation = document.getElementById('equation-4');
+                equation.classList.add('show');
+                playSound(659, 0.3);
+                updateNavigation();
+            }, 500);
+        }
+
+        // Page 5: Interactive slider with exact button behavior
+        function initPage5() {
+            const slider = document.getElementById('multiplication-slider');
+            const equation = document.getElementById('equation-5');
+            const blocksContainer = document.getElementById('slider-blocks');
+            const instructionOverlay = document.getElementById('instruction-overlay');
+            const mainNextBtn = document.getElementById('next-btn');
+            
+            // Reset slider to 0 when entering the page
+            slider.value = 0;
+            
+            // Function to update display based on slider value
+            function updateSliderDisplay(value) {
+                const result = 2 * value;
+                equation.textContent = `2 × ${value} = ${result}`;
+                
+                // Update blocks display
+                blocksContainer.innerHTML = '';
+                for (let i = 0; i < value; i++) {
+                    const rod = document.createElement('div');
+                    rod.className = 'rod fade-in';
+                    rod.style.animationDelay = `${i * 0.1}s`;
+                    rod.innerHTML = '<div class="unit-block">1</div><div class="unit-block">1</div>';
+                    blocksContainer.appendChild(rod);
+                }
+                
+                // Control instruction overlay and main navigation button
+                if (value === 10) {
+                    // Hide instruction overlay, enable main next button
+                    instructionOverlay.classList.add('hidden');
+                    mainNextBtn.disabled = false;
+                    mainNextBtn.classList.add('glow');
+                    playSound(880, 0.5);
+                } else {
+                    // Show instruction overlay, disable main next button
+                    instructionOverlay.classList.remove('hidden');
+                    mainNextBtn.disabled = true;
+                    mainNextBtn.classList.remove('glow');
+                }
+            }
+            
+            // Initialize with starting value (slider = 0)
+            instructionOverlay.classList.remove('hidden');
+            mainNextBtn.disabled = true;
+            updateSliderDisplay(0);
+            
+            // Slider input event
+            slider.oninput = function() {
+                const value = parseInt(this.value);
+                updateSliderDisplay(value);
+                playSound(220 + (value * 20), 0.1);
+            };
+            
+            updateNavigation();
+        }
+
+        // Page 6: Even number sequence
+        function initPage6() {
+            const container = document.getElementById('even-sequence');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= 5; i++) {
+                setTimeout(() => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'sequence-item';
+                    
+                    const rod = document.createElement('div');
+                    rod.className = 'rod';
+                    
+                    for (let j = 0; j < i; j++) {
+                        const block = document.createElement('div');
+                        block.className = 'unit-block';
+                        block.textContent = '2';
+                        rod.appendChild(block);
+                    }
+                    
+                    const label = document.createElement('div');
+                    label.className = 'sequence-label';
+                    label.textContent = `${i * 2}`;
+                    
+                    wrapper.appendChild(rod);
+                    wrapper.appendChild(label);
+                    container.appendChild(wrapper);
+                    
+                    setTimeout(() => {
+                        wrapper.classList.add('show');
+                    }, 100);
+                    
+                    playSound(440 + (i * 110), 0.2);
+                }, i * 400);
+            }
+            
+            setTimeout(() => updateNavigation(), 2500);
+        }
+
+        // Page 7: Multiples display
+        function initPage7() {
+            const container = document.getElementById('multiples-display');
+            container.innerHTML = '';
+            
+            const multiples = [
+                {mult: 3, result: 6},
+                {mult: 4, result: 8},
+                {mult: 5, result: 10}
+            ];
+            
+            multiples.forEach((item, index) => {
+                setTimeout(() => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'sequence-item';
+                    
+                    const equation = document.createElement('div');
+                    equation.textContent = `2 × ${item.mult} = ${item.result}`;
+                    equation.style.fontSize = '1.5rem';
+                    equation.style.fontWeight = 'bold';
+                    equation.style.marginBottom = '10px';
+                    
+                    const rod = document.createElement('div');
+                    rod.className = 'rod';
+                    
+                    for (let i = 0; i < item.mult; i++) {
+                        const block = document.createElement('div');
+                        block.className = 'unit-block';
+                        block.textContent = '2';
+                        rod.appendChild(block);
+                    }
+                    
+                    wrapper.appendChild(equation);
+                    wrapper.appendChild(rod);
+                    container.appendChild(wrapper);
+                    
+                    setTimeout(() => {
+                        wrapper.classList.add('show');
+                    }, 100);
+                    
+                    playSound(330 + (index * 110), 0.3);
+                }, index * 600);
+            });
+            
+            setTimeout(() => updateNavigation(), 2500);
+        }
+
+        // Page 8: Celebration
+        function initPage8() {
+            createConfetti();
+            playSound(523, 0.5); // C note
+            setTimeout(() => playSound(659, 0.5), 200); // E note
+            setTimeout(() => playSound(784, 1), 400); // G note
+            
+            document.getElementById('restart-btn').onclick = () => {
+                // Reset game state
+                currentPage = 0;
+                completedPages = [0];
+                page1ClickCount = 0;
+                page3ClickCount = 0;
+                
+                // Reset UI
+                document.getElementById('next-btn').style.display = 'block';
+                document.getElementById('next-btn').classList.remove('glow');
+                showPage(0); // Go back to starting page
+            };
+        }
+
+        // Create confetti animation
+        function createConfetti() {
+            const celebration = document.getElementById('celebration');
+            celebration.innerHTML = '';
+            const colors = ['#FFD93D', '#FF6B6B', '#4CAF50', '#2196F3', '#9C27B0'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 2 + 's';
+                    celebration.appendChild(confetti);
+                    
+                    setTimeout(() => {
+                        if (confetti.parentNode) {
+                            confetti.remove();
+                        }
+                    }, 3000);
+                }, i * 100);
+            }
+        }
+
+        // Navigation event listeners
+        document.getElementById('next-btn').onclick = () => {
+            if (currentPage >= 0 && currentPage < 8 && !document.getElementById('next-btn').disabled) {
+                showPage(currentPage + 1);
+            }
+        };
+
+        document.getElementById('prev-btn').onclick = () => {
+            if (currentPage > 0) {
+                showPage(currentPage === 1 ? 0 : currentPage - 1);
+            }
+        };
+
+        // Progress dot navigation
+        document.querySelectorAll('.progress-dot').forEach(dot => {
+            dot.onclick = () => {
+                const pageNum = parseInt(dot.dataset.page);
+                if (completedPages.includes(pageNum)) {
+                    showPage(pageNum);
+                }
+            };
+        });
+
+        // Instruction overlay click handler for Page 5
+        document.getElementById('instruction-overlay').onclick = () => {
+            if (currentPage === 5) {
+                const slider = document.getElementById('multiplication-slider');
+                slider.value = 10;
+                const event = new Event('input');
+                slider.dispatchEvent(event);
+                playSound(880, 0.5);
+            }
+        };
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' && !document.getElementById('next-btn').disabled) {
+                document.getElementById('next-btn').click();
+            } else if (e.key === 'ArrowLeft' && !document.getElementById('prev-btn').disabled) {
+                document.getElementById('prev-btn').click();
+            }
+        });
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage(0); // Start with the starting page
+            
+            // Enable audio on first user interaction
+            document.addEventListener('click', initAudio, { once: true });
+            document.addEventListener('touchstart', initAudio, { once: true });
+            document.addEventListener('keydown', initAudio, { once: true });
+        });
+
+        // Prevent context menu and text selection for better touch experience
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('selectstart', e => e.preventDefault());
+    </script>
+</body>
+</html>
